@@ -73,7 +73,6 @@ void setup() {
     strlcpy(currentProfile, DEFAULT_PROFILE_NAME, sizeof(currentProfile));
     profileConfigurationFileName = String(String("/") + DEFAULT_PROFILE_NAME + String(FILENAME_PROFILE_CFG));
   }
-
   Serial.printf("Loading profile configuration from '%s'...", profileConfigurationFileName.c_str());
   cfgFile = SPIFFS.open(profileConfigurationFileName.c_str(), FILE_READ);
   error = deserializeJson(cfgJson, cfgFile);
@@ -83,7 +82,11 @@ void setup() {
     halt_system();
   }
   channelNumber = cfgJson["channel"];
-  strlcpy(ssid, cfgJson["ssid"], sizeof(ssid));
+
+  // Configure network
+  String defaultSsid = String(String(AP_SSID_PREFIX) + String(WiFi.softAPmacAddress()));
+  strlcpy(ssid, defaultSsid.c_str(), sizeof(ssid));
+  strlcpy(ssid, cfgJson["ssid"] | ssid, sizeof(ssid));
   cfgFile.close();
   Serial.println("OK");
   Serial.printf("  SSID:             %s\n", ssid);
@@ -91,13 +94,11 @@ void setup() {
   Serial.printf("  MAC:              %s\n", WiFi.softAPmacAddress().c_str());
   Serial.printf("  IP address:       %s\n", AP_ADDRESS);
 
-  // Parse IP address and netmask
+  // Configure AP
+  Serial.print("Configuring access point...");
   IPAddress ip, nm;
   ip.fromString(AP_ADDRESS);
   nm.fromString(AP_NETMASK);
-
-  // Configure AP
-  Serial.print("Configuring access point...");
   WiFi.softAPConfig(ip, ip, nm);
   WiFi.softAP(ssid, "", channelNumber, false, AP_MAX_CLIENTS);
   Serial.println("OK");
@@ -110,7 +111,7 @@ void setup() {
 
   // Setup mDNS
   Serial.print("Starting mDNS server...");
-  if (!MDNS.begin("beacon")) {
+  if (!MDNS.begin(MDNS_HOST_NAME)) {
     Serial.println("Failed!");
     halt_system();
   }

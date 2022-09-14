@@ -4,9 +4,10 @@
 // Network configuration
 #define DNS_PORT              53
 #define HTTP_PORT             80
-#define AP_ADDRESS            "10.0.0.1"
+#define AP_ADDRESS            "10.42.42.1"
 #define AP_NETMASK            "255.255.255.0"
 #define AP_MAX_CLIENTS        8
+#define AP_SSID_PREFIX        "WifiBeacon-"     // SSID used when no network name is specified in configuration, MAC is appended
 
 // Names of system files in SPIFFS 
 #define FILENAME_SYSTEM_CFG   "/system.cfg"
@@ -33,6 +34,7 @@
 #define FILE_WRITE            "w"
 
 // Miscellaneous
-#define RESTART_DELAY         5    // s - delay before restart from web admin
-#define NORMAL_BLINK_INTERVAL 1000 // ms - blink for normal operation
-#define ERROR_BLINK_INTERVAL  100  // ms - blink for error state
+#define RESTART_DELAY         5         // s - delay before restart from web admin
+#define NORMAL_BLINK_INTERVAL 1000      // ms - blink for normal operation
+#define ERROR_BLINK_INTERVAL  100       // ms - blink for error state
+#define MDNS_HOST_NAME        "beacon"  // .local domain is assumed
