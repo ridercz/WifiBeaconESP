@@ -1,12 +1,24 @@
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
-#include <DNSServer.h>
 #include <FS.h>
+#define HTTP_SERVER_TYPE      ESP8266WebServer
+#define AP_MODE_NAME          WIFI_AP
+#else
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include <SPIFFS.h>
+#define HTTP_SERVER_TYPE      WebServer
+#define AP_MODE_NAME          WIFI_MODE_AP
+#endif
+#include <DNSServer.h>
 #include <ArduinoJson.h>
 #include "WifiBeaconEspConfig.h"
 
-ESP8266WebServer server(HTTP_PORT);
+HTTP_SERVER_TYPE server(HTTP_PORT);
 DNSServer dnsServer;
 int lastClientCount = -1;
 char currentProfile[64];
@@ -24,15 +36,31 @@ void setup() {
   // Print banner
   Serial.begin(9600);
   Serial.println();
-  Serial.println("WifiBeaconESP version " VERSION);
+#ifdef ESP8266
+  Serial.println("WifiBeaconESP8266 version " VERSION);
+#else
+  Serial.println("WifiBeaconESP32 version " VERSION);
+#endif
   Serial.println("https://github.com/ridercz/WifiBeaconESP");
   Serial.println("Copyright (c) Michal Altair Valasek, 2022");
-  Serial.println("              www.rider.cz | www.altair.blog");
-  Serial.println();
+  Serial.println("www.rider.cz | www.altair.blog");
+
+  // Get device ID
+  char deviceId[18];
+#ifdef ESP8266
+  sprintf(deviceId, "WifiBeacon-%06X", ESP.getChipId());
+#else
+  uint32_t chipId = 0;
+  for (int i = 0; i < 17; i = i + 8) {
+    chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+  }
+  sprintf(deviceId, "WifiBeacon-%06X", chipId);
+#endif
+  Serial.printf("Device ID: %s\n\n", deviceId);
 
   // Switch to AP mode
   Serial.print("Switching to AP mode...");
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(AP_MODE_NAME);
   Serial.println("OK");
 
   // Initialize SPIFFS
@@ -85,7 +113,7 @@ void setup() {
 
   // Configure network
   String defaultSsid = String(String(AP_SSID_PREFIX) + String(WiFi.softAPmacAddress()));
-  strlcpy(ssid, defaultSsid.c_str(), sizeof(ssid));
+  strlcpy(ssid, deviceId, sizeof(ssid));
   strlcpy(ssid, cfgJson["ssid"] | ssid, sizeof(ssid));
   cfgFile.close();
   Serial.println("OK");
@@ -172,7 +200,8 @@ void handleAdminIndex() {
   html += "<form action=\"" URL_ADMIN_RESET "\" method=\"GET\"><p><input type=\"submit\" value=\"Reset device\" /></p></form>\n";
   html += "<form action=\"" URL_ADMIN_SAVE "\" method=\"POST\">\n<p><select name=\"currentProfile\" style=\"width:345px\">";
 
-  // List all profiles
+#ifdef ESP8266
+  // List all profiles - ESP8266
   Dir root = SPIFFS.openDir("/");
   while (root.next()) {
     String fileName = String(root.fileName());
@@ -185,6 +214,26 @@ void handleAdminIndex() {
       }
     }
   }
+#else
+  // List all profiles - ESP32
+  File root = SPIFFS.open("/");
+  File f = root.openNextFile();
+  while (f) {
+    String fileName = String(f.path());
+    f.close();
+
+    if (fileName.endsWith(FILENAME_PROFILE_CFG)) {
+      String profileName = fileName.substring(1, fileName.indexOf("/", 1));
+      if (profileName.equalsIgnoreCase(currentProfile)) {
+        html += "<option selected=\"selected\" value=\"" + profileName + "\">" + profileName + " (current)</option>\n";
+      } else {
+        html += "<option value=\"" + profileName + "\">" + profileName + "</option>\n";
+      }
+    }
+
+    f = root.openNextFile();
+  }
+#endif
 
   // Prepare second part of admin homepage
   html += "</select></p>\n<p><input type=\"submit\" value=\"Change Profile\" style=\"width: 150px\" /></p>\n</form>";
