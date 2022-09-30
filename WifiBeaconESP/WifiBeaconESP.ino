@@ -48,13 +48,13 @@ void setup() {
   // Get device ID
   char deviceId[18];
 #ifdef ESP8266
-  sprintf(deviceId, "WifiBeacon-%06X", ESP.getChipId());
+  sprintf(deviceId, AP_SSID_FORMAT, ESP.getChipId());
 #else
   uint32_t chipId = 0;
   for (int i = 0; i < 17; i = i + 8) {
     chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
-  sprintf(deviceId, "WifiBeacon-%06X", chipId);
+  sprintf(deviceId, AP_SSID_FORMAT, chipId);
 #endif
   Serial.printf("Device ID: %s\n\n", deviceId);
 
@@ -112,7 +112,6 @@ void setup() {
   channelNumber = cfgJson["channel"];
 
   // Configure network
-  String defaultSsid = String(String(AP_SSID_PREFIX) + String(WiFi.softAPmacAddress()));
   strlcpy(ssid, deviceId, sizeof(ssid));
   strlcpy(ssid, cfgJson["ssid"] | ssid, sizeof(ssid));
   cfgFile.close();

@@ -7,7 +7,7 @@
 #define AP_ADDRESS            "10.42.42.1"
 #define AP_NETMASK            "255.255.255.0"
 #define AP_MAX_CLIENTS        8
-#define AP_SSID_PREFIX        "WifiBeacon-"     // SSID used when no network name is specified in configuration, MAC is appended
+#define AP_SSID_FORMAT        "WifiBeacon-%06X"     // SSID used when no network name is specified in configuration, MAC is appended
 
 // Names of system files in SPIFFS 
 #define FILENAME_SYSTEM_CFG   "/system.cfg"
@@ -25,7 +25,7 @@
 #define ADMIN_HTML_FOOTER     "\n<footer><div>Copyright &copy; Michal A. Valasek, 2022</div><div>www.rider.cz | www.altair.blog</div><div>github.com/ridercz/WifiBeaconESP</div></footer></body></html>"
 
 // Defaults for system.cfg
-#define DEFAULT_PROFILE_NAME  "DEFAULT"
+#define DEFAULT_PROFILE_NAME  "_DEFAULT"
 #define DEFAULT_ADMIN_PREFIX  "/admin/" // has to begin and end with /
 
 // SPIFFS file modes
